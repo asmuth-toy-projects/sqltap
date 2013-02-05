@@ -27,6 +27,17 @@ object InstructionParser {
       cur.args += null // offset
     }
 
+    case "countAll" => {
+      cur.name = "findMulti"
+
+      cur.args += null // condition
+      cur.args += null // order
+      cur.args += null // limit
+      cur.args += null // offset
+
+      cur.args += "COUNT"
+    }
+
     case "fetch" => {
       cur.prev.next = cur.prev.next diff List(cur)
       cur.prev.args = cur.prev.args :+ cur.args.head
