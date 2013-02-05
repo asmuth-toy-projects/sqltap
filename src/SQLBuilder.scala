@@ -15,8 +15,9 @@ object SQLBuilder {
 
     "SELECT " +
 
-    (if (fields.size == 1 && fields.head == "*") "*" else
-      fields.map(res.table_name + ".`" + _ + "`").mkString(", ")) +
+    (if (fields.size == 1 && fields.head == "*") "*" 
+      else if (fields.size==1 && fields.head == "COUNT") "COUNT(*) AS count"
+      else fields.map(res.table_name + ".`" + _ + "`").mkString(", ")) +
 
     " FROM " + res.table_name +
 

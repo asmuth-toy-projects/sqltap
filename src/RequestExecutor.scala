@@ -131,7 +131,7 @@ class RequestExecutor extends RequestVisitor {
       var join_field : String = null
 
       if (cur.args.size < 5)
-        throw new ParseException("emtpy field list")
+        throw new ParseException("empty field list")
 
       if (cur.record.has_id) {
         join_field = cur.relation.resource.id_field
@@ -150,17 +150,23 @@ class RequestExecutor extends RequestVisitor {
       if (join_field != null) {
         cur.running = true
         cur.job = SQLTap.db_pool.execute(
-          SQLBuilder.sql(cur.relation.resource,
-            join_field, cur.record.id.toString,
-            cur.args.slice(4, cur.args.size).toList,
-            cur.args(2), cur.args(3), null, null))
+          SQLBuilder.sql(
+            cur.relation.resource,
+            join_field, 
+            cur.record.id.toString,
+            cur.args.slice(4, cur.args.size).toList, // fields
+            cur.args(2), // cond
+            cur.args(3), // order
+            null, // limit
+            null  // offset
+          ))
       }
     }
 
     case "findMulti" => {
 
       if (cur.args.size < 6)
-        throw new ParseException("emtpy field list")
+        throw new ParseException("empty field list")
 
       if (cur.prev == req.stack.root) {
         cur.running = true

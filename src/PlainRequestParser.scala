@@ -9,7 +9,7 @@ class PlainRequestParser extends RequestVisitor {
   val t_rsrc = """^([0-9a-z_\-]+)\.(.*)""".r // fixpaul
   val t_sfld = """^([0-9a-z_\-]+)([,\}].*)""".r // fixpaul
   val t_sarg = """^([^,\)]+)(.*)""".r
-  val t_func = """^(findOne|findSome|findAll)\.?(.*)""".r
+  val t_func = """^(findOne|findSome|findAll|countAll)\.?(.*)""".r
   val t_rbrs = """^\((.*)""".r
   val t_rbre = """^\)(.*)""".r
   val t_cbrs = """^\{(.*)""".r
@@ -78,7 +78,7 @@ class PlainRequestParser extends RequestVisitor {
         { req.stack.push_arg(arg); parse(tail) }
 
       case t_func(name: String, tail: String) =>
-        { req.stack.head.name = name; parse(tail); funcb += 1 }
+        { req.stack.head.name = name; parse(tail); if (name != "countAll") funcb += 1 }
 
       case _ => done = false
     }
