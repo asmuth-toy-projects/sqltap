@@ -7,10 +7,10 @@ class XMLHelper(elem: xml.Node) {
     val value = elem.attribute(name).getOrElse(null)
 
     if (value != null)
-      value.toString
+      value.text
 
     else if (required) throw new ParseException(
-     "missing attribute: " + name + " => " + elem.toString)
+     "missing attribute: " + name + " => " + elem.text)
 
     else
       (if (default != null) default else null)
