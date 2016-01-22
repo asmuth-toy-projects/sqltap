@@ -1,0 +1,62 @@
+diff --git a/src/com/paulasmuth/sqltap/ExpirationHandlerFactory.scala b/src/com/paulasmuth/sqltap/ExpirationHandlerFactory.scala
+index 2145f56..cf17011 100644
+--- a/src/com/paulasmuth/sqltap/ExpirationHandlerFactory.scala
++++ b/src/com/paulasmuth/sqltap/ExpirationHandlerFactory.scala
+@@ -1,5 +1,5 @@
+ // This file is part of the "SQLTap" project
+-//   (c) 2011-2013 Paul Asmuth <paul@paulasmuth.com>
++//   (c) 2014 Paul Asmuth, Google Inc. <asmuth@google.com>
+ //
+ // Licensed under the MIT License (the "License"); you may not use this
+ // file except in compliance with the License. You may obtain a copy of
+@@ -30,8 +30,10 @@ object ExpirationHandlerFactory {
+       case "noop" =>
+         handler = new NoopExpirationHandler()
+ 
+-      case "purge" =>
++      case "purge" => {
+         handler = new PurgeExpirationHandler()
++        ReplicationFeed.start()
++      }
+ 
+       case _ =>
+         throw new ParseException("unknown expiration handler: " + name)
+diff --git a/src/com/paulasmuth/sqltap/HTTPParser.scala b/src/com/paulasmuth/sqltap/HTTPParser.scala
+index 22b27be..33cd26d 100644
+--- a/src/com/paulasmuth/sqltap/HTTPParser.scala
++++ b/src/com/paulasmuth/sqltap/HTTPParser.scala
+@@ -1,5 +1,5 @@
+ // This file is part of the "SQLTap" project
+-//   (c) 2011-2013 Paul Asmuth <paul@paulasmuth.com>
++//   (c) 2014 Paul Asmuth, Google Inc. <asmuth@google.com>
+ //
+ // Licensed under the MIT License (the "License"); you may not use this
+ // file except in compliance with the License. You may obtain a copy of
+@@ -130,7 +130,7 @@ class HTTPParser {
+   }
+ 
+   def uri_parts() : List[String] = {
+-    val uri = URLDecoder.decode(http_uri, "UTF-8")
++    val uri = URLDecoder.decode(http_uri)
+     var pos = uri.length
+     var cur = pos - 1
+     var ret = new ListBuffer[String]()
+diff --git a/src/com/paulasmuth/sqltap/SQLTap.scala b/src/com/paulasmuth/sqltap/SQLTap.scala
+index 357fc20..05c8921 100644
+--- a/src/com/paulasmuth/sqltap/SQLTap.scala
++++ b/src/com/paulasmuth/sqltap/SQLTap.scala
+@@ -1,5 +1,5 @@
+ // This file is part of the "SQLTap" project
+-//   (c) 2011-2013 Paul Asmuth <paul@paulasmuth.com>
++//   (c) 2014 Paul Asmuth, Google Inc. <asmuth@google.com>
+ //
+ // Licensed under the MIT License (the "License"); you may not use this
+ // file except in compliance with the License. You may obtain a copy of
+@@ -108,7 +108,6 @@ object SQLTap{
+     Manifest.load(new File(Config.get('config_base)))
+     RelationTrace.load(Manifest.resources)
+     ExpirationHandlerFactory.configure(Config.get('expiration_handler))
+-    ReplicationFeed.start()
+ 
+     val server = new Server(Config.get('threads).toInt)
+     server.run(Config.get('http_port).toInt)

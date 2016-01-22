@@ -1,0 +1,100 @@
+diff -r -u sqltap/src/com/paulasmuth/sqltap/HTTPConnection.scala sqltap-0.7.21/src/com/paulasmuth/sqltap/HTTPConnection.scala
+--- sqltap/src/com/paulasmuth/sqltap/HTTPConnection.scala	2014-02-12 16:13:05.009387526 +0100
++++ sqltap-0.7.21/src/com/paulasmuth/sqltap/HTTPConnection.scala	2014-09-04 14:31:28.000000000 +0200
+@@ -1,10 +1,9 @@
+ // This file is part of the "SQLTap" project
+-//   (c) 2011-2013 Paul Asmuth <paul@paulasmuth.com>
++//   (c) 2014 Paul Asmuth, Google Inc. <asmuth@google.com>
+ //
+ // Licensed under the MIT License (the "License"); you may not use this
+ // file except in compliance with the License. You may obtain a copy of
+ // the License at: http://opensource.org/licenses/MIT
+-
+ package com.paulasmuth.sqltap
+ 
+ import java.nio.channels.{SocketChannel,SelectionKey}
+@@ -23,6 +22,7 @@
+   private val parser = new HTTPParser()
+   private var state = HTTP_STATE_INIT
+   private var last_event : SelectionKey = null
++  private var last_uri : String = "<unknown>" // for debugging only
+   private var keepalive : Boolean = false
+   private var resp_buf : ByteBuffer = null
+ 
+@@ -190,6 +190,7 @@
+ 
+     idle_timer.cancel()
+     stime = System.nanoTime
++    last_uri = parser.http_uri
+     seq += 1
+ 
+     if (parser.http_version == "1.1")
+@@ -302,8 +303,13 @@
+   }
+ 
+   def finish() : Unit = {
+-    Statistics.incr('http_request_time_mean,
+-      (System.nanoTime - stime) / 1000000.0)
++    val runtime_millis = (System.nanoTime - stime) / 1000000.0
++    Statistics.incr('http_request_time_mean, runtime_millis)
++
++    if (Config.has_key('log_slow_queries) &&
++        runtime_millis >= Config.get('log_slow_queries).toInt) {
++      Logger.log("[HTTP] [Slow Query] (" + runtime_millis + "ms): " + last_uri)
++    }
+ 
+     if (!keepalive)
+       return close()
+diff -r -u sqltap/src/com/paulasmuth/sqltap/mysql/SQLQuery.scala sqltap-0.7.21/src/com/paulasmuth/sqltap/mysql/SQLQuery.scala
+--- sqltap/src/com/paulasmuth/sqltap/mysql/SQLQuery.scala	2014-02-12 16:13:05.013389526 +0100
++++ sqltap-0.7.21/src/com/paulasmuth/sqltap/mysql/SQLQuery.scala	2014-09-04 14:31:38.000000000 +0200
+@@ -1,10 +1,9 @@
+ // This file is part of the "SQLTap" project
+-//   (c) 2011-2013 Paul Asmuth <paul@paulasmuth.com>
++//   (c) 2014 Paul Asmuth, Google Inc. <asmuth@google.com>
+ //
+ // Licensed under the MIT License (the "License"); you may not use this
+ // file except in compliance with the License. You may obtain a copy of
+ // the License at: http://opensource.org/licenses/MIT
+-
+ package com.paulasmuth.sqltap.mysql
+ 
+ import com.paulasmuth.sqltap._
+@@ -44,8 +43,14 @@
+     tok = System.nanoTime
+     qtime = tok - tik
+ 
+-    Statistics.incr('sql_request_time_mean, qtime / 1000000.0)
+-    Logger.debug("Finished (" + (qtime / 1000000.0) + "ms): " + query)
++    val runtime_millis = qtime / 1000000.0
++    Statistics.incr('sql_request_time_mean, runtime_millis)
++    Logger.debug("Finished (" + runtime_millis + "ms): " + query)
++
++    if (Config.has_key('log_slow_queries) &&
++        runtime_millis >= Config.get('log_slow_queries).toInt) {
++      Logger.log("[SQL] [Slow Query] (" + runtime_millis + "ms): " + query)
++    }
+   }
+ 
+   def error(err: Throwable) : Unit = {
+diff -r -u sqltap/src/com/paulasmuth/sqltap/SQLTap.scala sqltap-0.7.21/src/com/paulasmuth/sqltap/SQLTap.scala
+--- sqltap/src/com/paulasmuth/sqltap/SQLTap.scala	2014-02-25 17:15:47.049982142 +0100
++++ sqltap-0.7.21/src/com/paulasmuth/sqltap/SQLTap.scala	2014-09-04 14:35:51.000000000 +0200
+@@ -72,6 +71,9 @@
+       else if (args(n) == "--disable-keepalive")
+         { Config.set('http_keepalive, "false"); n += 1 }
+ 
++      else if (args(n) == "--log-slow-queries")
++        { Config.set('log_slow_queries, args(n+1)); n += 2 }
++
+       else if ((args(n) == "-t") || (args(n) == "--threads"))
+         { Config.set('threads, args(n+1)); n += 2 }
+ 
+@@ -138,6 +139,7 @@
+     println("  --memcache-queuelen    <num>     max mysql queue size per worker              ")
+     println("  --memcache-numconns    <num>     max number of mysql connections per worker   ")
+     println("  --memcache-mode        <name>    replication mode (copy, shard)               ")
++    println("  --log-slow-queries     <millis>  log all queries with a runtime > val in ms   ")
+     println("  -h, --help                       you're reading it...                         ")
+     println("  -d, --debug                      debug mode                                   ")
+   }
