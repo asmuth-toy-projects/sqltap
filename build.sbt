@@ -4,16 +4,18 @@ name := "SQLTap"
 
 organization := "com.paulasmuth"
 
-version := "0.7.21"
+version := "0.8.1"
 
 mainClass in (Compile, run) := Some("com.paulasmuth.sqltap.SQLTap")
 
-scalaSource in Compile <<= baseDirectory(_ / "src")
-
-scalaVersion := "2.9.1"
+scalaVersion := "2.11.7"
 
 assemblySettings
 
-jarName in assembly := "sqltap_0.7.21.jar"
+jarName in assembly := { s"${name.value.toLowerCase}.jar" }
 
 fork in run := true
+
+libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
+
+libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.2.4" % "test"
